@@ -1,0 +1,137 @@
+import { Head, Link, usePage } from '@inertiajs/react'
+import AppLayout from '@/layouts/app-layout'
+import type { BreadcrumbItem } from '@/types'
+import { show as usersShow, following as usersFollowing } from '@/routes/users'
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+
+interface User {
+  id: number
+  first_name: string
+  last_name: string
+  email: string
+}
+
+interface FollowableUser {
+  id: number
+  first_name: string
+  last_name: string
+  email: string
+  avatar_url?: string | null
+}
+
+interface FollowableOrganization {
+  id: number
+  name: string
+  description: string
+}
+
+interface FollowingItem {
+  following_user?: FollowableUser
+  following_organization?: FollowableOrganization
+}
+
+interface FollowingPageProps {
+  user: User
+  following: FollowingItem[]
+}
+
+export default function Following({ user, following }: FollowingPageProps) {
+  const { auth } = usePage().props
+
+  const users = following.filter((item) => item.following_user)
+  const organizations = following.filter((item) => item.following_organization)
+
+  const breadcrumbs: BreadcrumbItem[] = [
+    { title: `${user.first_name} ${user.last_name}`, href: usersShow(user).url },
+    { title: 'Following', href: usersFollowing(user).url },
+  ]
+
+  return (
+    <AppLayout breadcrumbs={breadcrumbs}>
+      <Head title={`${user.first_name} ${user.last_name}'s Following`} />
+
+      <div className="p-4 space-y-8">
+        {/* Header */}
+        <div>
+          <Link href={`/users/${user.id}`} className="text-blue-600 hover:underline">
+            ← Back to {`${user.first_name} ${user.last_name}`}
+          </Link>
+          <h1 className="text-3xl font-bold tracking-tight mt-4">Following</h1>
+          <p className="text-muted-foreground mt-2">{following.length} follow{following.length !== 1 ? 's' : ''}</p>
+        </div>
+
+        {/* Users Section */}
+        {users.length > 0 && (
+          <div>
+            <h2 className="text-2xl font-bold mb-4">People</h2>
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {users.map((item: FollowingItem) => {
+                const followUser = item.following_user as FollowableUser
+                return (
+                  <Card key={`user-${followUser.id}`}>
+                    <CardHeader>
+                      <div className="flex items-center gap-3">
+                        <Avatar>
+                          <AvatarImage src={followUser.avatar_url ?? undefined} alt={`${followUser.first_name} ${followUser.last_name}`} />
+                          <AvatarFallback>{followUser.first_name.charAt(0)}</AvatarFallback>
+                        </Avatar>
+                        <CardTitle className="text-lg">{`${followUser.first_name} ${followUser.last_name}`}</CardTitle>
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-sm text-muted-foreground">{followUser.email}</p>
+                    </CardContent>
+                    <CardFooter>
+                      <Link href={`/users/${followUser.id}`} className="w-full">
+                        <Button variant="outline" size="sm" className="w-full">
+                          View Profile
+                        </Button>
+                      </Link>
+                    </CardFooter>
+                  </Card>
+                )
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Organizations Section */}
+        {organizations.length > 0 && (
+          <div>
+            <h2 className="text-2xl font-bold mb-4">Organizations</h2>
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {organizations.map((item: FollowingItem) => {
+                const followOrg = item.following_organization as FollowableOrganization
+                return (
+                  <Card key={`org-${followOrg.id}`}>
+                    <CardHeader>
+                      <CardTitle className="text-lg">{followOrg.name}</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-sm text-muted-foreground line-clamp-2">{followOrg.description}</p>
+                    </CardContent>
+                    <CardFooter>
+                      <Link href={`/organizations/${followOrg.id}`} className="w-full">
+                        <Button variant="outline" size="sm" className="w-full">
+                          View Organization
+                        </Button>
+                      </Link>
+                    </CardFooter>
+                  </Card>
+                )
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Empty state */}
+        {following.length === 0 && (
+          <p className="text-center text-muted-foreground py-12">Not following anyone yet</p>
+        )}
+      </div>
+    </AppLayout>
+  )
+}
