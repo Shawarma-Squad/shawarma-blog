@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Jobs\NotifyOnNewFollowerJob;
 use App\Models\Follow;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
@@ -62,6 +63,8 @@ class UserController extends Controller
             'following_user_id' => $user->id,
         ]);
 
+        NotifyOnNewFollowerJob::dispatch(auth()->user(), $user);
+
         return response()->json(['message' => 'Now following user.']);
     }
 
@@ -102,6 +105,25 @@ class UserController extends Controller
         return Inertia::render('users/following', [
             'user' => $user,
             'following' => $following,
+        ]);
+    }
+
+    /**
+     * Display the authenticated user's network (followers + following).
+     */
+    public function network(Request $request)
+    {
+        $user = auth()->user();
+
+        return Inertia::render('users/network', [
+            'followers' => $user->followers()
+                ->select('users.id', 'first_name', 'last_name', 'avatar_url', 'bio')
+                ->paginate(20, ['*'], 'followersPage')
+                ->withQueryString(),
+            'following' => $user->followingUsers()
+                ->select('users.id', 'first_name', 'last_name', 'avatar_url', 'bio')
+                ->paginate(20, ['*'], 'followingPage')
+                ->withQueryString(),
         ]);
     }
 }
